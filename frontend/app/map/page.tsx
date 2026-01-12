@@ -1,5 +1,6 @@
 "use client";
 
+/// Code here: https://www.npmjs.com/package/react-globe.gl?activeTab=code
 import { useEffect, useRef, useState } from 'react';
 import Globe from 'react-globe.gl';
 
