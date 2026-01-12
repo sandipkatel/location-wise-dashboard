@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { parse } from "papaparse";
+import { getCoordinates } from "@/lib/geocode";
+import type { LocationData } from "@/types";
+
+// In-memory storage (use database in production)
+let globalLocationData: LocationData[] = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,42 +18,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Read file content
     const text = await file.text();
 
-    // Parse CSV
     const result = await new Promise((resolve, reject) => {
       parse(text, {
         header: true,
         skipEmptyLines: true,
-        complete: (results : any) => resolve(results),
-        error: (error : any) => reject(error),
+        complete: (results) => resolve(results),
+        error: (error: any) => reject(error),
       });
     });
 
     const parsedData = result as { data: any[] };
+    const locationMap = new Map<string, LocationData>();
 
-    // Here you can:
-    // 1. Validate the data
-    // 2. Save to database
-    // 3. Process the data
-    // 4. Send to another service
+    // Process CSV rows
+    parsedData.data.forEach((row: any) => {
+      const country = row.country || row.Country;
+      const city = row.city || row.City;
+      const value = parseFloat(row.value || row.Value || "1");
 
-    console.log("CSV Data:", parsedData.data);
-    console.log("Row count:", parsedData.data.length);
+      if (!country && !city) return;
 
-    // Example: Send to external backend
-    // const backendResponse = await fetch('https://your-backend.com/api/data', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(parsedData.data),
-    // });
+      const coords = getCoordinates(city, country);
+      if (!coords) return;
+
+      const key = `${country}-${city}`;
+
+      if (locationMap.has(key)) {
+        const existing = locationMap.get(key)!;
+        existing.count = (existing.count || 0) + 1;
+        existing.value = (existing.value || 0) + value;
+      } else {
+        locationMap.set(key, {
+          country: country || "",
+          city: city || "",
+          lat: coords.lat,
+          lng: coords.lng,
+          value: value,
+          count: 1,
+        });
+      }
+    });
+
+    globalLocationData = Array.from(locationMap.values());
 
     return NextResponse.json({
       success: true,
       message: "File uploaded and processed successfully",
-      rowCount: parsedData.data.length,
-      data: parsedData.data.slice(0, 5), // Return first 5 rows as preview
+      rowCount: globalLocationData.length,
+      data: globalLocationData,
     });
   } catch (error) {
     console.error("Upload error:", error);
@@ -59,8 +78,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export async function GET() {
+  return NextResponse.json({
+    success: true,
+    data: globalLocationData,
+  });
+}

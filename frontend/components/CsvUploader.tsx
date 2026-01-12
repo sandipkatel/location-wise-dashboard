@@ -1,26 +1,28 @@
-"use client";
+'use client';
 
-import { useState, useRef } from "react";
-import { validateCsvFile } from "@/lib/validators";
-import { formatFileSize } from "@/lib/utils";
-import type { UploadResponse } from "@/types";
+import { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { validateCsvFile } from '@/lib/validators';
+import { formatFileSize } from '@/lib/utils';
+import type { UploadResponse } from '@/types';
 
 export default function CsvUploader() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
 
     if (selectedFile) {
       const validation = validateCsvFile(selectedFile);
       if (!validation.valid) {
-        setError(validation.error || "Invalid file");
+        setError(validation.error || 'Invalid file');
         setFile(null);
         return;
       }
@@ -30,38 +32,41 @@ export default function CsvUploader() {
 
   const handleUpload = async () => {
     if (!file) {
-      setError("Please select a file first");
+      setError('Please select a file first');
       return;
     }
 
     setUploading(true);
-    setError("");
-    setSuccess("");
+    setError('');
+    setSuccess('');
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append('file', file);
 
     try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
+      const response = await fetch('/api/upload', {
+        method: 'POST',
         body: formData,
       });
 
       const data: UploadResponse = await response.json();
 
       if (response.ok && data.success) {
-        setSuccess(
-          `File uploaded successfully! ${data.rowCount} rows processed.`
-        );
+        setSuccess(`File uploaded successfully! ${data.rowCount} locations processed.`);
         setFile(null);
         if (fileInputRef.current) {
-          fileInputRef.current.value = "";
+          fileInputRef.current.value = '';
         }
+        
+        // Redirect to map after 1.5 seconds
+        setTimeout(() => {
+          router.push('/map');
+        }, 1500);
       } else {
-        setError(data.message || "Upload failed");
+        setError(data.message || 'Upload failed');
       }
     } catch (err) {
-      setError("An error occurred during upload");
+      setError('An error occurred during upload');
       console.error(err);
     } finally {
       setUploading(false);
@@ -71,6 +76,14 @@ export default function CsvUploader() {
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">Upload CSV File</h2>
+
+      <div className="mb-4 p-4 bg-blue-50 rounded-md">
+        <p className="text-sm text-blue-800 mb-2 font-medium">CSV Format:</p>
+        <p className="text-xs text-blue-700">
+          Your CSV should include <strong>country</strong> and/or <strong>city</strong> columns.
+          <br />Example: country, city, value
+        </p>
+      </div>
 
       <div className="mb-4">
         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -91,8 +104,7 @@ export default function CsvUploader() {
             <span className="font-medium">File:</span> {file.name}
           </p>
           <p className="text-sm text-gray-500">
-            <span className="font-medium">Size:</span>{" "}
-            {formatFileSize(file.size)}
+            <span className="font-medium">Size:</span> {formatFileSize(file.size)}
           </p>
         </div>
       )}
@@ -106,6 +118,7 @@ export default function CsvUploader() {
       {success && (
         <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
           <p className="text-sm text-green-700">{success}</p>
+          <p className="text-xs text-green-600 mt-1">Redirecting to map...</p>
         </div>
       )}
 
@@ -114,7 +127,7 @@ export default function CsvUploader() {
         disabled={!file || uploading}
         className="w-full py-2 px-4 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
       >
-        {uploading ? "Uploading..." : "Upload File"}
+        {uploading ? 'Uploading...' : 'Upload & View Map'}
       </button>
     </div>
   );
