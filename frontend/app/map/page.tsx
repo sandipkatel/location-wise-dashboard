@@ -50,7 +50,7 @@ export default function GlobeViewer() {
       {/* Globe */}
       <Globe
         ref={globeEl}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-day.jpg"
+        globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
         pointsData={locations}
         pointAltitude={0.01}
