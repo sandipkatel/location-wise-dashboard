@@ -1,4 +1,3 @@
-import CsvUploader from '@/components/CsvUploader';
 import Link from 'next/link';
 
 export default function UploadPage() {
@@ -11,9 +10,7 @@ export default function UploadPage() {
         <p className="text-center text-gray-600 mb-8">
           Upload your CSV with location data to see it on an interactive 3D Earth
         </p>
-        
-        <CsvUploader />
-        
+                
         <div className="text-center mt-6">
           <Link 
             href="/map" 
