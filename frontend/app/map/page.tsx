@@ -1,15 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useRef, use } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import Papa from "papaparse";
-import Globe from "react-globe.gl";
+import { FileUpload } from "@/components/FileUpload";
+
+const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });  // ssr: flase causes globe not rotating problem
+
+interface LocationData {
+  name: string;
+  lat: number;
+  lng: number;
+  population?: number;
+  [key: string]: any;
+}
 
 export default function GlobeViewer() {
-  const [locations, setLocations] = useState([]);
-  const [csvHeaders, setCsvHeaders] = useState([]);
+  const [locations, setLocations] = useState<LocationData[]>([]);
   const [error, setError] = useState("");
-  const globeEl = useRef();
+  const globeEl = useRef<any>(null);
 
   // Sample data for demo
   const sampleData = [
@@ -28,86 +36,6 @@ export default function GlobeViewer() {
     }
   }, []);
 
-  const handleGlobeHover = (isHovering) => {
-    if (globeEl.current) {
-      globeEl.current.controls().autoRotate = !isHovering;
-    }
-  };
-
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.name.endsWith(".csv")) {
-      setError("Please upload a CSV file");
-      return;
-    }
-
-    setError("");
-
-    Papa.parse(file, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        if (results.data.length === 0) {
-          setError("CSV file is empty");
-          return;
-        }
-
-        setCsvHeaders(results.meta.fields);
-
-        // Try to intelligently map CSV columns to lat/lng
-        const data = results.data
-          .map((row) => {
-            const latKeys = ["lat", "latitude", "Lat", "Latitude"];
-            const lngKeys = [
-              "lng",
-              "lon",
-              "longitude",
-              "Lng",
-              "Lon",
-              "Longitude",
-            ];
-            const nameKeys = [
-              "name",
-              "city",
-              "country",
-              "location",
-              "Name",
-              "City",
-              "Country",
-              "Location",
-            ];
-
-            const lat = latKeys.find((key) => row[key] !== undefined);
-            const lng = lngKeys.find((key) => row[key] !== undefined);
-            const name = nameKeys.find((key) => row[key] !== undefined);
-
-            return {
-              lat: row[lat],
-              lng: row[lng],
-              name: row[name] || "Unknown",
-              ...row,
-            };
-          })
-          .filter((item) => item.lat && item.lng);
-
-        if (data.length === 0) {
-          setError(
-            "No valid location data found. CSV should have lat/latitude and lng/lon/longitude columns"
-          );
-          return;
-        }
-
-        setLocations(data);
-      },
-      error: (err) => {
-        setError(`Error parsing CSV: ${err.message}`);
-      },
-    });
-  };
-
   const loadSampleData = () => {
     setLocations(sampleData);
     setError("");
@@ -124,13 +52,11 @@ export default function GlobeViewer() {
         ref={globeEl}
         globeImageUrl="//unpkg.com/three-globe/example/img/earth-day.jpg"
         backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-        onGlobeClick={() => handleGlobeHover(true)}
-        onGlobeRightClick={() => handleGlobeHover(false)}
         pointsData={locations}
         pointAltitude={0.01}
         pointColor={() => "#FF6B6B"}
         pointRadius={0.5}
-        pointLabel={(d) => `
+        pointLabel={(d: any) => `
           <div style="background: rgba(0,0,0,0.8); padding: 10px; border-radius: 6px; color: white;">
             <strong>${d.name}</strong><br/>
             Lat: ${d.lat.toFixed(4)}<br/>
@@ -165,7 +91,8 @@ export default function GlobeViewer() {
           <h3>Locations</h3>
           {locations.map((loc, i) => (
             <div
-              key={i} className="mb-2 cursor-pointer py-2 px-8 hover:bg-white/10 rounded"
+              key={i}
+              className="mb-2 cursor-pointer py-2 px-8 hover:bg-white/10 rounded"
               onClick={() => {
                 if (globeEl.current) {
                   globeEl.current.pointOfView(
@@ -179,9 +106,7 @@ export default function GlobeViewer() {
                 }
               }}
             >
-              <div className="text-base text-orange-500">
-                {loc.name}
-              </div>
+              <div className="text-base text-orange-500">{loc.name}</div>
               <div className="text-xs text-gray-300">
                 {loc.lat.toFixed(2)}, {loc.lng.toFixed(2)}
               </div>
@@ -190,11 +115,7 @@ export default function GlobeViewer() {
         </div>
       )}
       {/* File Upload */}
-      <div className="absolute h-full w-50 right-0 bg-gray-800 opacity-50 border border-white/20">
-      <p>
-        Upload Your CSV file here...
-      </p>
-      </div>
+      <FileUpload setError={setError} />
     </div>
   );
 }
