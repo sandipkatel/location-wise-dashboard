@@ -1,2 +1,7 @@
 .venv/
 .dist/
+*/data/
+*.csv
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
