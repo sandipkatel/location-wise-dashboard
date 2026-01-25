@@ -1,25 +1,101 @@
-import Link from 'next/link';
+"use client";
 
-export default function UploadPage() {
+import { useState } from "react";
+import { X, AlertCircle } from "lucide-react";
+import GlobeTab from "@/components/GlobeTab";
+import { LocationData } from "@/types/location";
+import TableTab from "@/components/TableTab";
+import AnalyticsTab from "@/components/AnalyticsTab";
+import FileUpload from "@/components/FileUpload";
+
+export default function LocationDashboard() {
+  const [locations, setLocations] = useState<LocationData[]>([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [fileName, setFileName] = useState("");
+  const [activeTab, setActiveTab] = useState<"globe" | "table" | "stats">(
+    "globe",
+  );
+
+  const clearData = () => {
+    setLocations([]);
+    setFileName("");
+    setError("");
+  };
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="container mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-2 text-gray-900">
-          CSV Location Visualizer
-        </h1>
-        <p className="text-center text-gray-600 mb-8">
-          Upload your CSV with location data to see it on an interactive 3D Earth
-        </p>
-                
-        <div className="text-center mt-6">
-          <Link 
-            href="/map" 
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-          >
-            View Map →
-          </Link>
+    <div className="max-w-7xl mx-auto px-3 pt-4">
+      {/* Upload Section */}
+      {locations.length === 0 ? (
+        <FileUpload
+          setError={setError}
+          setLocations={setLocations}
+          setFileName={setFileName}
+          setLoading={setLoading}
+        />
+      ) : (
+        <>
+          {/* Tabs */}
+          <div className="flex justify-between mb-6 border-b border-slate-700">
+            <div className="flex gap-4">
+              {["globe", "table", "stats"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as any)}
+                  className={`px-4 py-3 font-medium transition ${
+                    activeTab === tab
+                      ? "text-cyan-400 border-b-2 border-cyan-400"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {tab === "globe" && "Globe"}
+                  {tab === "table" && "Table"}
+                  {tab === "stats" && "Statistics"}
+                </button>
+              ))}
+            </div>
+            <div className="m-0 p-0">
+              {fileName && (
+                <div className="flex bg-gray-500/20 rounded-lg px-1 items-center gap-4">
+                  <span className="text-sm text-gray-300">
+                    File: {fileName}
+                  </span>
+                  <button
+                    onClick={clearData}
+                    className="p-2 hover:bg-red-500/20 rounded-lg transition"
+                  >
+                    <X className="w-5 h-5 text-red-400" />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === "globe" && <GlobeTab locations={locations} />}
+
+          {activeTab === "table" && <TableTab locations={locations} />}
+
+          {activeTab === "stats" && <AnalyticsTab locations={locations} />}
+        </>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mt-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-gap gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+          <p className="text-red-300">{error}</p>
         </div>
-      </div>
-    </main>
+      )}
+
+      {loading && (
+        <div className="mt-6 text-center">
+          <div className="inline-block">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+            <p className="text-gray-400 mt-2">Processing file...</p>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

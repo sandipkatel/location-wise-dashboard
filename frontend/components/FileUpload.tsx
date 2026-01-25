@@ -1,47 +1,84 @@
-"use client";
-import { Upload } from 'lucide-react';
-import { ChangeEvent, useState } from 'react';
+import { Upload } from "lucide-react";
+import { useRef } from "react";
 
-export function FileUpload(setError: any) {
-    const [fileName, setFileName] = useState('');
+export default function FileUpload({
+  setError,
+  setLocations,
+  setFileName,
+  setLoading,
+}: {
+  setError: (msg: string) => void;
+  setLocations: (data: any[]) => void;
+  setFileName: (name: string) => void;
+  setLoading: (loading: boolean) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFileName(file.name);
-      // Process your CSV file here
-      console.log('File selected:', file);
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    setLoading(true);
+    setError("");
+
+    try {
+      // Placeholder: Replace with actual backend API call
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // const response = await fetch("/api/upload-csv", {
+      //   method: "POST",
+      //   body: formData,
+      // });
+      // const data = await response.json();
+      // setLocations(data.locations);
+
+      // Mock data for demo
+      setTimeout(() => {
+        const mockData = [
+          { name: "New York", lat: 40.7128, lng: -74.006 },
+          { name: "London", lat: 51.5074, lng: -0.1278 },
+          { name: "Tokyo", lat: 35.6762, lng: 139.6503 },
+        ];
+        setLocations(mockData);
+        setFileName(file.name);
+      }, 500);
+    } catch (err) {
+      setError("Failed to process CSV file");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(file);
+    }
+  };
   return (
-    <div className="absolute h-full w-50 right-0 p-2 bg-gray-900 border border-white/20">
-        <h2 className='text-bold text-xl border-b-2 border-gray-50 mb-3'>Upload CSV file with "country" or "city" column</h2>
-      <div className="w-full max-w-md">
-        <label
-          htmlFor="csv-upload"
-          className="flex flex-col items-center justify-center w-full h-44 p-2 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors"
-        >
-          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-            <Upload className="w-12 h-12 mb-4 text-gray-400" />
-            <p className="mb-2 text-sm text-center text-gray-500">
-              <span className="font-semibold">Click to upload</span> or drag and
-              drop CSV file here    
-            </p>
-            {fileName && (
-              <p className="mt-4 text-sm text-gray-50 font-medium">
-                {fileName}
-              </p>
-            )}
-          </div>
-          <input
-            id="csv-upload"
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-        </label>
+    <div className="h-96 flex items-center justify-center">
+      <div
+        className="border-2 border-dashed border-slate-600 rounded-lg p-12 w-full max-w-md text-center cursor-pointer hover:border-cyan-400 hover:bg-slate-800/30 transition"
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <Upload className="w-12 h-12 text-cyan-400 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-white mb-2">
+          Upload CSV File
+        </h2>
+        <p className="text-gray-400 text-sm mb-4">
+          Drag and drop your CSV file here or click to select
+        </p>
+        <p className="text-gray-500 text-xs">
+          Your CSV file should have atleast one location data
+        </p>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          onChange={handleFileInputChange}
+          className="hidden"
+        />
       </div>
     </div>
   );
