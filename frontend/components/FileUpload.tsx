@@ -1,5 +1,6 @@
 import { Upload } from "lucide-react";
 import { useRef } from "react";
+import { apiPostData } from "@/app/api/route";
 
 export default function FileUpload({
   setError,
@@ -21,29 +22,25 @@ export default function FileUpload({
     setError("");
 
     try {
-      // Placeholder: Replace with actual backend API call
-      const formData = new FormData();
-      formData.append("file", file);
-
-      // const response = await fetch("/api/upload-csv", {
-      //   method: "POST",
-      //   body: formData,
-      // });
-      // const data = await response.json();
-      // setLocations(data.locations);
-
+      // Parse CSV file in frontend
+      const text = await file.text();
+      const lines = text.trim().split("\n");
+      const headers = lines[0].split(",").map((h) => h.trim());
+      const jsonData = lines.slice(1).map((line) => {
+        const values = line.split(",").map((v) => v.trim());
+        return headers.reduce((obj, header, index) => {
+          obj[header] = values[index];
+          return obj;
+        }, {} as Record<string, string>);
+      });
+      const response = await apiPostData({ csvData: jsonData });
+      const data = response.data;
+      setLocations(data);   // TODO: Parsed backend instead
+      setFileName(file.name);
       // Mock data for demo
-      setTimeout(() => {
-        const mockData = [
-          { name: "New York", lat: 40.7128, lng: -74.006 },
-          { name: "London", lat: 51.5074, lng: -0.1278 },
-          { name: "Tokyo", lat: 35.6762, lng: 139.6503 },
-        ];
-        setLocations(mockData);
-        setFileName(file.name);
-      }, 500);
     } catch (err) {
       setError("Failed to process CSV file");
+      setLocations([]);
       console.error(err);
     } finally {
       setLoading(false);

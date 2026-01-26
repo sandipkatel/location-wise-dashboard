@@ -2,8 +2,9 @@
 import axios from "axios";
 
 // For server-side API calls
-const apiBaseUrl = process.env.NEXT_BACKEND_URL // Browser environment
-
+const apiBaseUrl =
+  process.env.NEXT_BACKEND_URL || "http://localhost:8000/api/v1"; // Browser environment
+console.log("API Base", apiBaseUrl);
 // Create axios instance
 const api = axios.create({
   baseURL: apiBaseUrl,
@@ -36,17 +37,8 @@ api.interceptors.response.use(
   },
 );
 
-// Metadata endpoints
-export const apiSetMetadata = ({
-  dataset_name,
-  dataset_description,
-}: {
-  dataset_name: any;
-  dataset_description: any;
-}) => api.post("metadata", { dataset_name, dataset_description });
-export const apiGetMetadata = ({ datasetID }: { datasetID: any }) =>
-  api.get(`metadata/${datasetID}`);
-export const apiGetFieldsByAI = ({ description }: { description: any }) =>
-  api.get("generate/AI-fields/", { params: { description } });
+// Endpoints
+export const apiPostData = ({ csvData }: { csvData: any }) =>
+  api.post("dataset/", csvData);
 
 export default api;
