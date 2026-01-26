@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from api import datasets
-from core.settings import settings
+import route
+from settings import settings
 
 from mangum import Mangum
 
@@ -25,7 +25,7 @@ app.add_middleware(
     expose_headers=["Set-Cookie"],
 )
 
-app.include_router(datasets.router, prefix=f"{settings.API_V1_STR}/dataset", tags=["dataset"])
+app.include_router(route.router, prefix=f"{settings.API_V1_STR}/dataset", tags=["dataset"])
 
 @app.get("/")
 def root():

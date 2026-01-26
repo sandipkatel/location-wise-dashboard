@@ -11,6 +11,13 @@ def read_dataset_by_id() -> Any:
     """
     pass
 
+@router.post("/")
+def read_incoming_csv() -> Any:
+    """
+    Get a specific dataset by id.
+    """
+    pass
+
 
 # @router.put("/{dataset_id}", response_model=schemas.Dataset)
 # def update_dataset(
