@@ -10,6 +10,7 @@ import FileUpload from "@/components/FileUpload";
 
 export default function LocationDashboard() {
   const [locations, setLocations] = useState<LocationData[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -26,12 +27,12 @@ export default function LocationDashboard() {
   return (
     <div className="max-w-7xl mx-auto px-3 pt-4">
       {/* Upload Section */}
-      {locations.length === 0 ? (
+      {data.length === 0 ? (
         <FileUpload
           setError={setError}
-          setLocations={setLocations}
           setFileName={setFileName}
           setLoading={setLoading}
+          setData={setData}
         />
       ) : (
         <>
@@ -74,7 +75,7 @@ export default function LocationDashboard() {
           {/* Tab Content */}
           {activeTab === "globe" && <GlobeTab locations={locations} />}
 
-          {activeTab === "table" && <TableTab locations={locations} />}
+          {activeTab === "table" && <TableTab csvData={data} />}
 
           {activeTab === "stats" && <AnalyticsTab locations={locations} />}
         </>

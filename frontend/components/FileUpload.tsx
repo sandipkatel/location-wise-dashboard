@@ -4,19 +4,27 @@ import { apiPostData } from "@/app/api/route";
 
 export default function FileUpload({
   setError,
-  setLocations,
   setFileName,
   setLoading,
+  setData,
 }: {
   setError: (msg: string) => void;
-  setLocations: (data: any[]) => void;
   setFileName: (name: string) => void;
   setLoading: (loading: boolean) => void;
+  setData: (data: any[]) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
+    if (file.type !== "text/csv") {
+      setError("Please upload a valid CSV file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("File size exceeds 5MB limit");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -28,19 +36,21 @@ export default function FileUpload({
       const headers = lines[0].split(",").map((h) => h.trim());
       const jsonData = lines.slice(1).map((line) => {
         const values = line.split(",").map((v) => v.trim());
-        return headers.reduce((obj, header, index) => {
-          obj[header] = values[index];
-          return obj;
-        }, {} as Record<string, string>);
+        return headers.reduce(
+          (obj, header, index) => {
+            obj[header] = values[index];
+            return obj;
+          },
+          {} as Record<string, string>,
+        );
       });
       const response = await apiPostData({ csvData: jsonData });
-      const data = response.data;
-      setLocations(data);   // TODO: Parsed backend instead
+      setData(jsonData); // TODO: Parsed backend instead
       setFileName(file.name);
       // Mock data for demo
     } catch (err) {
       setError("Failed to process CSV file");
-      setLocations([]);
+      setData([]);
       console.error(err);
     } finally {
       setLoading(false);

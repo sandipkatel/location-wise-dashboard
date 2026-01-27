@@ -23,11 +23,7 @@ def read_incoming_csv(data: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Handle parsed CSV data (array of objects)."""
     return {
         "status": "success",
-         "data":[
-            { "name": "New York", "lat": 40.7128, "lng": -74.006 },
-            { "name": "London", "lat": 51.5074, "lng": -0.1278 },
-            { "name": "Tokyo", "lat": 35.6762, "lng": 139.6503 },
-        ]
+         "data": data
    }
 
 

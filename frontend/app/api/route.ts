@@ -4,7 +4,6 @@ import axios from "axios";
 // For server-side API calls
 const apiBaseUrl =
   process.env.NEXT_BACKEND_URL || "http://localhost:8000/api/v1"; // Browser environment
-console.log("API Base", apiBaseUrl);
 // Create axios instance
 const api = axios.create({
   baseURL: apiBaseUrl,
