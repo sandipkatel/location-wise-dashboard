@@ -33,6 +33,7 @@ export default function LocationDashboard() {
           setFileName={setFileName}
           setLoading={setLoading}
           setData={setData}
+          setLocations={setLocations}
         />
       ) : (
         <>

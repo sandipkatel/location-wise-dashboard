@@ -1,68 +1,140 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { LocationData } from "@/types/location";
 import dynamic from "next/dynamic";
 
 const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
-interface LocationData {
-  name: string;
-  lat: number;
-  lng: number;
-  population?: number;
-  [key: string]: any;
-}
-
-export default function GlobeVisualization() {
-  const [locations, setLocations] = useState<LocationData[]>([]);
-  const [error, setError] = useState("");
+export default function GlobeVisualization({
+  locations,
+}: {
+  locations: LocationData[];
+}) {
+  console.log("Locations in GlobeVisualization:", locations);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [hoveredLabel, setHoveredLabel] = useState<LocationData | null>(null);
   const globeEl = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout>(undefined);
 
-  // Sample data for demo
-  const sampleData = [
-    { name: "New York", lat: 40.7128, lng: -74.006, population: 8336817 },
-    { name: "London", lat: 51.5074, lng: -0.1278, population: 8982000 },
-    { name: "Tokyo", lat: 35.6762, lng: 139.6503, population: 13960000 },
-    { name: "Paris", lat: 48.8566, lng: 2.3522, population: 2161000 },
-    { name: "Sydney", lat: -33.8688, lng: 151.2093, population: 5312000 },
-  ];
+  // Filter out invalid locations (missing coordinates)
+  const validLocations = useMemo(
+    () =>
+      locations.filter(
+        (loc) => loc.latitude !== null && loc.longitude !== null && loc.name,
+      ),
+    [locations],
+  );
 
-  // Measure container dimensions
+  // Debounced resize handler
+  const updateDimensions = useCallback(() => {
+    if (containerRef.current) {
+      const { clientWidth, clientHeight } = containerRef.current;
+      setDimensions({
+        width: clientWidth,
+        height: clientHeight,
+      });
+    }
+  }, []);
+
+  const handleResize = useCallback(() => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+    resizeTimeoutRef.current = setTimeout(updateDimensions, 150);
+  }, [updateDimensions]);
+
+  // Handle label click
+  const handleLabelClick = useCallback((label: LocationData) => {
+    console.log("Clicked location:", label);
+
+    // Example: Focus on the clicked location
+    if (globeEl.current) {
+      globeEl.current.pointOfView(
+        {
+          lat: label.latitude,
+          lng: label.longitude,
+          altitude: 1.5,
+        },
+        1000,
+      );
+    }
+
+    // You can also:
+    // - Open a modal with location details
+    // - Navigate to a detail page
+    // - Show a tooltip
+    // - Trigger any custom action
+  }, []);
+
+  // Handle label hover
+  const handleLabelHover = useCallback((label: LocationData | null) => {
+    setHoveredLabel(label);
+    console.log("Hovered location:", label);
+
+    // Change cursor style
+    if (containerRef.current) {
+      containerRef.current.style.cursor = label ? "pointer" : "default";
+    }
+  }, []);
+
+  // Measure container dimensions on mount
   useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
+    updateDimensions();
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
       }
     };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
+  }, [updateDimensions, handleResize]);
 
   // Auto-rotate globe
   useEffect(() => {
-    if (globeEl.current) {
+    if (globeEl.current?.controls) {
       globeEl.current.controls().autoRotate = true;
       globeEl.current.controls().autoRotateSpeed = 0.15;
     }
   }, []);
 
+  // Auto-focus on data if available
   useEffect(() => {
-    setLocations(sampleData);
-    setError("");
-  }, []);
+    if (globeEl.current && validLocations.length > 0) {
+      // Center on first valid location
+      const firstLoc = validLocations[0];
+      globeEl.current.pointOfView(
+        { lat: firstLoc.latitude, lng: firstLoc.longitude, altitude: 2 },
+        1500,
+      );
+    }
+  }, [validLocations]);
+
+  if (validLocations.length === 0) {
+    return (
+      <div className="w-full h-full bg-black rounded-lg overflow-hidden flex items-center justify-center">
+        <p className="text-gray-400">No valid locations to display</p>
+      </div>
+    );
+  }
 
   return (
     <div
       ref={containerRef}
       className="w-full h-full bg-black rounded-lg overflow-hidden"
     >
+      {/* Optional: Show tooltip on hover */}
+      {hoveredLabel && (
+        <div className="absolute top-4 left-4 bg-black/80 text-white p-3 rounded-lg border border-orange-500">
+          <h3 className="font-bold">{hoveredLabel.name}</h3>
+          <p className="text-sm text-gray-300">
+            {hoveredLabel.latitude.toFixed(2)},{" "}
+            {hoveredLabel.longitude.toFixed(2)}
+          </p>
+        </div>
+      )}
+
       {dimensions.width > 0 && dimensions.height > 0 && (
         <Globe
           ref={globeEl}
@@ -70,36 +142,25 @@ export default function GlobeVisualization() {
           height={dimensions.height}
           globeImageUrl="//unpkg.com/three-globe/example/img/earth-night.jpg"
           backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
-          pointsData={locations}
-          pointAltitude={0.01}
-          pointColor={() => "#FF6B6B"}
-          pointRadius={0.5}
-          pointLabel={(d: any) => `
-            <div style="background: rgba(0,0,0,0.8); padding: 10px; border-radius: 6px; color: white;">
-              <strong>${d.name}</strong><br/>
-              Lat: ${d.lat.toFixed(4)}<br/>
-              Lng: ${d.lng.toFixed(4)}
-              ${d.population ? `<br/>Pop: ${d.population.toLocaleString()}` : ""}
-            </div>
-          `}
-          arcsData={
-            locations.length > 1
-              ? locations.slice(0, -1).map((d, i) => ({
-                  startLat: d.lat,
-                  startLng: d.lng,
-                  endLat: locations[i + 1].lat,
-                  endLng: locations[i + 1].lng,
-                }))
-              : []
-          }
-          arcColor={() => "rgba(139, 92, 246, 0.3)"}
-          arcDashLength={0.4}
-          arcDashGap={0.2}
-          arcDashAnimateTime={3000}
-          arcStroke={0.5}
+          labelsData={validLocations}
+          labelLat={(d: object) => (d as LocationData).latitude}
+          labelLng={(d: object) => (d as LocationData).longitude}
+          labelText={(d: object) => (d as LocationData).name}
+          labelSize={1.5} // TODO: Adjust size as needed
+          labelDotRadius={0.5} // TODO: Adjust size as needed
+          labelColor={() => "rgba(255, 165, 0, 0.75)"}
+          labelResolution={2}
+          // Add click and hover handlers
+          onLabelClick={(label: object) => handleLabelClick(label as LocationData)}
+          onLabelHover={(label: object | null) => handleLabelHover(label as LocationData | null)}
           showAtmosphere={true}
           atmosphereColor="#aaaaaa"
-          atmosphereAltitude={0.2}
+          atmosphereAltitude={0.15}
+          rendererConfig={{
+            antialias: true,
+            alpha: true,
+            logarithmicDepthBuffer: true,
+          }}
         />
       )}
     </div>

@@ -1,17 +1,19 @@
 import { Upload } from "lucide-react";
 import { useRef } from "react";
-import { apiPostData } from "@/app/api/route";
+import { apiPostData } from "@/lib/api";
 
 export default function FileUpload({
   setError,
   setFileName,
   setLoading,
   setData,
+  setLocations,
 }: {
   setError: (msg: string) => void;
   setFileName: (name: string) => void;
   setLoading: (loading: boolean) => void;
   setData: (data: any[]) => void;
+  setLocations: (data: any[]) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,6 +48,8 @@ export default function FileUpload({
       });
       const response = await apiPostData({ csvData: jsonData });
       setData(jsonData); // TODO: Parsed backend instead
+      console.log("Geocoded response:", response);
+      setLocations(JSON.parse(response.data.location_data));
       setFileName(file.name);
       // Mock data for demo
     } catch (err) {
