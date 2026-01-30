@@ -14,11 +14,13 @@ export default function LocationDashboard() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [significantCol, setSignificantCol] = useState("");
   const [activeTab, setActiveTab] = useState<"globe" | "table" | "stats">(
     "globe",
   );
 
   const clearData = () => {
+    setData([]);
     setLocations([]);
     setFileName("");
     setError("");
@@ -34,6 +36,7 @@ export default function LocationDashboard() {
           setLoading={setLoading}
           setData={setData}
           setLocations={setLocations}
+          setSignificantCol={setSignificantCol}
         />
       ) : (
         <>

@@ -25,16 +25,24 @@ def read_incoming_csv(data: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Handle parsed CSV data (array of objects)."""
     try:
         response = get_coordinates_for_json(data)
-        print("Geocoding completed successfully.", response)
+        significant_columns = response.columns.drop(['name', 'latitude', 'longitude']).tolist()
+        if not significant_columns:
+            raise ValueError("No numeric columns found for aggregation.")
+            
+        globe_df = response[['name', 'latitude', 'longitude', significant_columns[0]]].copy()
+        globe_df = globe_df.rename(columns={significant_columns[0]: 'significantCol'})
+        globe_data = globe_df.to_json(orient='records')
         return {
-            "status": "success",
-            "data": {"location_data": response}
+            "status": 200,
+            "data": {"globe_data": globe_data,
+                     "significant_columns": significant_columns,
+                     "full_data": response.to_json(orient='records')}  
         }
     except Exception as e:
         print("Error during geocoding:", str(e))
         return {
-            "status": "error",
-            "message": str(e)
+            "status": 500,
+            "statusText": str(e)
         }
 
 

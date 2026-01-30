@@ -4,6 +4,7 @@ import pandas as pd
 import time
 import re
 import io
+from helper.dtype_converter import convert_values
 
 
 def get_major_location_column(jsonData):
@@ -73,6 +74,42 @@ def get_major_location_column(jsonData):
         return None
 
 
+def get_numeric_columns_after_location(df, location_column):
+    """
+    Finds numeric columns that appear after the location column.
+    
+    Args:
+        df (DataFrame): The dataframe to analyze
+        location_column (str): The name of the location column
+        
+    Returns:
+        list: List of numeric column names that appear after the location column
+    """
+    if df is None or location_column not in df.columns:
+        return []
+
+    columns = df.columns.tolist()
+    
+    # Find the index of the location column
+    try:
+        location_idx = columns.index(location_column)
+    except ValueError:
+        return []
+        
+    # Get columns after the location column
+    columns_after = columns[location_idx + 1:]
+    # Filter for numeric columns
+    numeric_cols = []
+    for col in columns_after:
+        # Check if column is numeric (int or float)
+        if pd.api.types.is_numeric_dtype(df[col]):
+            numeric_cols.append(col)
+        else:
+            print(f"Column '{col}' is not numeric")
+    
+    return numeric_cols
+
+
 def get_location_coordinates(location_name, location_type='city'):
     """
     Gets longitude and latitude for a given location using Nominatim (OpenStreetMap).
@@ -116,31 +153,55 @@ def get_location_coordinates(location_name, location_type='city'):
         }
 
 
-def get_coordinates_for_json(josnData):
+def get_coordinates_for_json(stringJsonData):
     """
-    Adds latitude and longitude columns to a CSV based on location data.
+    Adds latitude and longitude columns to a CSV based on location data,
+    and aggregates numeric columns by location.
     
     Args:
-        jsonData (str): JSON data from frontend containing.
+        jsonData (list): JSON data from frontend containing location and numeric data.
         
     Returns:
-        JSON: Locations with added latitude and longitude data.
+        JSON: Locations with added latitude, longitude, and aggregated numeric data.
     """
-    
+
+    # Convert stringified values to proper types
+    jsonData = convert_values(stringJsonData)
     # Auto-detect location column
-    location_column = get_major_location_column(josnData) 
+    location_column = get_major_location_column(jsonData) 
     if location_column is None:
         raise ValueError("No location column found in data.")
     
     print(f"Using auto-detected column: {location_column}")
     
+    # Create DataFrame
+    df = pd.DataFrame(jsonData)
+    
+    # Detect numeric columns after location column
+    numeric_columns = get_numeric_columns_after_location(df, location_column)
+    df_grouped = df[[location_column] + numeric_columns].copy()
+    if numeric_columns:
+        print(f"Found numeric columns to aggregate: {numeric_columns}")
+        
+        # Group by location and sum numeric columns
+        agg_dict = {col: 'sum' for col in numeric_columns}
+        df_grouped = df.groupby(location_column, as_index=False).agg(agg_dict)
+    else:
+        print("No numeric columns found after location column")
+    
     # Initialize coordinate columns
-    df = pd.DataFrame(josnData)
-    df['latitude'] = None
-    df['longitude'] = None
+    df_grouped['latitude'] = None
+    df_grouped['longitude'] = None
     
     # Get unique locations to minimize API calls
-    unique_locations = df[location_column].dropna().unique()
+    unique_locations = df_grouped[location_column].dropna().unique()
+    
+    if len(unique_locations) > 100:
+        raise ValueError("Too many unique locations (>100). Please reduce the dataset size.")
+
+    if len(unique_locations) == 0:
+        raise ValueError("No valid locations found in the location column.")
+        
     location_cache = {}
         
     # Geocode unique locations
@@ -150,12 +211,14 @@ def get_coordinates_for_json(josnData):
         location_cache[loc] = coords
     
     # Map coordinates back to dataframe
-    for idx, row in df.iterrows():
+    for idx, row in df_grouped.iterrows():
         loc_value = row[location_column]
         if pd.notna(loc_value) and loc_value in location_cache:
             coords = location_cache[loc_value]
-            df.at[idx, 'latitude'] = coords['latitude']
-            df.at[idx, 'longitude'] = coords['longitude']
+            df_grouped.at[idx, 'latitude'] = coords['latitude']
+            df_grouped.at[idx, 'longitude'] = coords['longitude']
     
-    df = df.rename(columns={location_column: 'name'})
-    return df[['name', 'latitude', 'longitude']].to_json(orient='records')
+    # Rename location column to 'name' and prepare output
+    df_grouped = df_grouped.rename(columns={location_column: 'name'})
+    
+    return df_grouped

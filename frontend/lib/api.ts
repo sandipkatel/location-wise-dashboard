@@ -37,7 +37,7 @@ api.interceptors.response.use(
 );
 
 // Endpoints
-export const apiPostData = ({ csvData }: { csvData: any }) =>
-  api.post("dataset/", csvData);
+export const apiPostData = ({ jsonData }: { jsonData: any }) =>
+  api.post("dataset/", jsonData);
 
 export default api;

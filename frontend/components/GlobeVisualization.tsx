@@ -8,10 +8,14 @@ const Globe = dynamic(() => import("react-globe.gl"), { ssr: false });
 
 export default function GlobeVisualization({
   locations,
+  clickedLabel,
+
+  setClickedLabel,
 }: {
   locations: LocationData[];
+  clickedLabel: LocationData | null;
+  setClickedLabel: (label: LocationData | null) => void;
 }) {
-  console.log("Locations in GlobeVisualization:", locations);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [hoveredLabel, setHoveredLabel] = useState<LocationData | null>(null);
   const globeEl = useRef<any>(null);
@@ -26,6 +30,24 @@ export default function GlobeVisualization({
       ),
     [locations],
   );
+
+  const normalizeSize = useMemo(() => {
+    if (validLocations.length === 0) return () => 0.5;
+
+    const values = validLocations.map((loc) => loc.significantCol);
+    console.log("Significant column values:", values);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    // Handle edge case where all values are the same
+    if (min === max) return () => 1.5; // Return middle value
+
+    // Normalize to 0.1-2 range (min visible, max at 2)
+    const MIN_SIZE = 0.5;
+    const MAX_SIZE = 2;
+    return (value: number) =>
+      MIN_SIZE + ((value - min) / (max - min)) * (MAX_SIZE - MIN_SIZE);
+  }, [validLocations]);
 
   // Debounced resize handler
   const updateDimensions = useCallback(() => {
@@ -47,31 +69,12 @@ export default function GlobeVisualization({
 
   // Handle label click
   const handleLabelClick = useCallback((label: LocationData) => {
-    console.log("Clicked location:", label);
-
-    // Example: Focus on the clicked location
-    if (globeEl.current) {
-      globeEl.current.pointOfView(
-        {
-          lat: label.latitude,
-          lng: label.longitude,
-          altitude: 1.5,
-        },
-        1000,
-      );
-    }
-
-    // You can also:
-    // - Open a modal with location details
-    // - Navigate to a detail page
-    // - Show a tooltip
-    // - Trigger any custom action
+    setClickedLabel(label);
   }, []);
 
   // Handle label hover
   const handleLabelHover = useCallback((label: LocationData | null) => {
     setHoveredLabel(label);
-    console.log("Hovered location:", label);
 
     // Change cursor style
     if (containerRef.current) {
@@ -97,19 +100,32 @@ export default function GlobeVisualization({
       globeEl.current.controls().autoRotate = true;
       globeEl.current.controls().autoRotateSpeed = 0.15;
     }
+    if (globeEl.current) {
+      globeEl.current.pointOfView(
+        {
+          lat: clickedLabel.latitude,
+          lng: clickedLabel.longitude,
+          altitude: 1.5,
+        },
+        1000,
+      );
+    }
   }, []);
 
   // Auto-focus on data if available
   useEffect(() => {
-    if (globeEl.current && validLocations.length > 0) {
-      // Center on first valid location
-      const firstLoc = validLocations[0];
+    // Focus on the clicked location
+    if (globeEl.current) {
       globeEl.current.pointOfView(
-        { lat: firstLoc.latitude, lng: firstLoc.longitude, altitude: 2 },
-        1500,
+        {
+          lat: clickedLabel.latitude,
+          lng: clickedLabel.longitude,
+          altitude: 1.5,
+        },
+        1000,
       );
     }
-  }, [validLocations]);
+  }, [clickedLabel]);
 
   if (validLocations.length === 0) {
     return (
@@ -146,13 +162,20 @@ export default function GlobeVisualization({
           labelLat={(d: object) => (d as LocationData).latitude}
           labelLng={(d: object) => (d as LocationData).longitude}
           labelText={(d: object) => (d as LocationData).name}
-          labelSize={1.5} // TODO: Adjust size as needed
-          labelDotRadius={0.5} // TODO: Adjust size as needed
+          labelSize={(d: object) =>
+            normalizeSize((d as LocationData).significantCol)
+          }
+          labelDotRadius={(d: object) =>
+            normalizeSize((d as LocationData).significantCol)
+          }
           labelColor={() => "rgba(255, 165, 0, 0.75)"}
           labelResolution={2}
-          // Add click and hover handlers
-          onLabelClick={(label: object) => handleLabelClick(label as LocationData)}
-          onLabelHover={(label: object | null) => handleLabelHover(label as LocationData | null)}
+          onLabelClick={(label: object) =>
+            handleLabelClick(label as LocationData)
+          }
+          onLabelHover={(label: object | null) =>
+            handleLabelHover(label as LocationData | null)
+          }
           showAtmosphere={true}
           atmosphereColor="#aaaaaa"
           atmosphereAltitude={0.15}

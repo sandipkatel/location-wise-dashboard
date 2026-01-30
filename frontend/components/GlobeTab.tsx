@@ -1,15 +1,22 @@
 "use client";
+import { useState } from "react";
 
 import GlobeVisualization from "@/components/GlobeVisualization";
 import { LocationData } from "@/types/location";
 
 export default function Globetab({ locations }: { locations: LocationData[] }) {
-  console.log("Locations in GlobeTab:", locations);
+  const [clickedLabel, setClickedLabel] = useState<LocationData | null>(
+    locations[0] || null,
+  );
   return (
     <div className="flex flex-col">
       <div className="flex gap-6">
         <div className="rounded-lg border border-slate-700 h-150 w-full flex items-center justify-center">
-          <GlobeVisualization locations={locations} />
+          <GlobeVisualization
+            locations={locations}
+            clickedLabel={clickedLabel}
+            setClickedLabel={setClickedLabel}
+          />
         </div>
         {/* Location List */}
         <div className="flex-1">
@@ -17,12 +24,13 @@ export default function Globetab({ locations }: { locations: LocationData[] }) {
             Loaded Locations
           </h3>
           {locations.map((loc, i) => (
-            <div
+            <button
               key={i}
-              className="w-50 mb-2 p-1 text-center bg-slate-800/50 border border-slate-700 rounded-lg hover:border-cyan-400/50 transition cursor-pointer"
+              className="w-50 p-1 text-center border border-slate-700/50 hover:border-cyan-400/40 transition cursor-pointer"
+              onClick={() => setClickedLabel(loc)}
             >
               <p className="text-white">{loc.name}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>

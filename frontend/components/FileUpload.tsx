@@ -8,12 +8,14 @@ export default function FileUpload({
   setLoading,
   setData,
   setLocations,
+  setSignificantCol,
 }: {
   setError: (msg: string) => void;
   setFileName: (name: string) => void;
   setLoading: (loading: boolean) => void;
   setData: (data: any[]) => void;
   setLocations: (data: any[]) => void;
+  setSignificantCol: (col: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,11 +48,26 @@ export default function FileUpload({
           {} as Record<string, string>,
         );
       });
-      const response = await apiPostData({ csvData: jsonData });
-      setData(jsonData); // TODO: Parsed backend instead
-      console.log("Geocoded response:", response);
-      setLocations(JSON.parse(response.data.location_data));
-      setFileName(file.name);
+      const response = await apiPostData({ jsonData });
+      if (response && response.status === 200) {
+        setData(
+          response.data.full_data ? JSON.parse(response.data.full_data) : [],
+        );
+        setLocations(
+          JSON.parse(
+            response.data.globe_data ? response.data.globe_data : "[]",
+          ),
+        );
+        setSignificantCol(
+          response.data.significant_columns[0]
+            ? response.data.significant_columns[0]
+            : "",
+        );
+        setFileName(file.name);
+      } else {
+        setError(response.statusText || "Failed to process CSV file on server");
+        setData([]);
+      }
       // Mock data for demo
     } catch (err) {
       setError("Failed to process CSV file");
