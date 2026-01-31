@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, AlertCircle } from "lucide-react";
+import { X, AlertCircle, Map } from "lucide-react";
 import GlobeTab from "@/components/GlobeTab";
 import { LocationData } from "@/types/location";
+import { AnalyticalData } from "@/types/analytics";
 import TableTab from "@/components/TableTab";
 import AnalyticsTab from "@/components/AnalyticsTab";
 import FileUpload from "@/components/FileUpload";
@@ -11,6 +12,9 @@ import FileUpload from "@/components/FileUpload";
 export default function LocationDashboard() {
   const [locations, setLocations] = useState<LocationData[]>([]);
   const [data, setData] = useState<any[]>([]);
+  const [analyticalData, setAnalyticalData] = useState<AnalyticalData | null>(
+    null,
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -22,85 +26,99 @@ export default function LocationDashboard() {
   const clearData = () => {
     setData([]);
     setLocations([]);
+    setAnalyticalData(null);
     setFileName("");
+    setSignificantCol("");
     setError("");
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-3 pt-4">
-      {/* Upload Section */}
-      {data.length === 0 ? (
-        <FileUpload
-          setError={setError}
-          setFileName={setFileName}
-          setLoading={setLoading}
-          setData={setData}
-          setLocations={setLocations}
-          setSignificantCol={setSignificantCol}
-        />
-      ) : (
-        <>
-          {/* Tabs */}
-          <div className="flex justify-between mb-6 border-b border-slate-700">
-            <div className="flex gap-4">
-              {["globe", "table", "stats"].map((tab) => (
+    <div className="min-h-screen border-b border-slate-700 bg-slate-900/50 backdrop-blur">
+      <div className="max-w-7xl mx-auto px-3 pt-4">
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between">
+            {fileName && (
+              <div className="flex bg-slate-700/50 rounded-lg px-4 py-2 items-center gap-4">
+                <span className="text-sm text-gray-300">
+                  File:{" "}
+                  <span className="font-medium text-white">{fileName}</span>
+                </span>
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab as any)}
-                  className={`px-4 py-3 font-medium transition ${
-                    activeTab === tab
-                      ? "text-cyan-400 border-b-2 border-cyan-400"
-                      : "text-gray-400 hover:text-white"
-                  }`}
+                  onClick={clearData}
+                  className="p-1 hover:bg-red-500/20 rounded-lg transition"
+                  title="Clear data"
                 >
-                  {tab === "globe" && "Globe"}
-                  {tab === "table" && "Table"}
-                  {tab === "stats" && "Statistics"}
+                  <X className="w-5 h-5 text-red-400" />
                 </button>
-              ))}
-            </div>
-            <div className="m-0 p-0">
-              {fileName && (
-                <div className="flex bg-gray-500/20 rounded-lg px-1 items-center gap-4">
-                  <span className="text-sm text-gray-300">
-                    File: {fileName}
-                  </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Upload Section */}
+        {data.length === 0 ? (
+          <FileUpload
+            setError={setError}
+            setFileName={setFileName}
+            setData={setData}
+            setLocations={setLocations}
+            setSignificantCol={setSignificantCol}
+            setAnalyticalData={setAnalyticalData}
+          />
+        ) : (
+          <>
+            {/* Tabs */}
+            <div className="flex justify-between mb-6 border-b border-slate-700">
+              <div className="flex gap-4">
+                {[
+                  { id: "globe", label: "Globe View" },
+                  { id: "table", label: "Data Table" },
+                  { id: "stats", label: "Analytics" },
+                ].map((tab) => (
                   <button
-                    onClick={clearData}
-                    className="p-2 hover:bg-red-500/20 rounded-lg transition"
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`px-6 py-3 font-medium transition relative ${
+                      activeTab === tab.id
+                        ? "text-cyan-400 border-b-2 border-cyan-400"
+                        : "text-gray-400 hover:text-white"
+                    }`}
                   >
-                    <X className="w-5 h-5 text-red-400" />
+                    {tab.label}
                   </button>
-                </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tab Content */}
+            <div className="pb-8">
+              {activeTab === "globe" && (
+                <GlobeTab
+                  locations={locations}
+                  significantCol={significantCol}
+                  analyticalData={analyticalData}
+                />
+              )}
+
+              {activeTab === "table" && <TableTab csvData={data} />}
+
+              {activeTab === "stats" && (
+                <AnalyticsTab analyticsData={analyticalData} />
               )}
             </div>
+          </>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <p className="text-red-300">{error}</p>
           </div>
+        )}
 
-          {/* Tab Content */}
-          {activeTab === "globe" && <GlobeTab locations={locations} />}
-
-          {activeTab === "table" && <TableTab csvData={data} />}
-
-          {activeTab === "stats" && <AnalyticsTab locations={locations} />}
-        </>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="mt-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-gap gap-3">
-          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-          <p className="text-red-300">{error}</p>
-        </div>
-      )}
-
-      {loading && (
-        <div className="mt-6 text-center">
-          <div className="inline-block">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
-            <p className="text-gray-400 mt-2">Processing file...</p>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

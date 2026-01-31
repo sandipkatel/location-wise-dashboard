@@ -1,0 +1,1 @@
+from src.services.analytical_data import get_analytical_data
