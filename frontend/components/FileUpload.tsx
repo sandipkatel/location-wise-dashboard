@@ -11,14 +11,12 @@ import { apiPostData } from "@/lib/api";
 import { AnalyticalData } from "@/types/analytics";
 
 export default function FileUpload({
-  setError,
   setFileName,
   setData,
   setLocations,
   setSignificantCol,
   setAnalyticalData,
 }: {
-  setError: (msg: string) => void;
   setFileName: (name: string) => void;
   setData: (data: any[]) => void;
   setLocations: (data: any[]) => void;
@@ -28,6 +26,7 @@ export default function FileUpload({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleFileUpload = async (file: File) => {
     if (!file) return;
@@ -140,29 +139,32 @@ export default function FileUpload({
         </p>
       </div>
 
-      {/* Loading State */}
-      {loading && (
-        <div className="mt-6 text-center">
-          <div className="inline-block">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto"></div>
-            <p className="text-gray-400 mt-2">Processing file...</p>
+      {/* Upload Area Wrapper */}
+      <div className="relative mt-6">
+        {/* Processing Overlay */}
+        {loading && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm rounded-2xl">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-cyan-400 mb-3" />
+            <p className="text-gray-200 font-medium">Processing file...</p>
           </div>
-        </div>
-      )}
-      {/* Upload Area */}
+        )}
+
+        {/* Upload Area */}
         <div
-          className={`relative border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all ${
-            isDragging
-              ? "border-cyan-400 bg-cyan-500/10 scale-[1.02]"
-              : "border-slate-600 hover:border-cyan-400 hover:bg-slate-800/50"
-          }`}
-          onClick={() => fileInputRef.current?.click()}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all
+      ${loading ? "blur-sm opacity-60 pointer-events-none" : "cursor-pointer"}
+      ${
+        isDragging && !loading
+          ? "border-cyan-400 bg-cyan-500/10 scale-[1.02]"
+          : "border-slate-600 hover:border-cyan-400 hover:bg-slate-800/50"
+      }`}
+          onClick={() => !loading && fileInputRef.current?.click()}
+          onDragOver={loading ? undefined : handleDragOver}
+          onDragLeave={loading ? undefined : handleDragLeave}
+          onDrop={loading ? undefined : handleDrop}
         >
           {/* Decorative Elements */}
-          <div className="absolute top-0 left-0 w-full h-full overflow-hidden rounded-2xl pointer-events-none">
+          <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
             <div className="absolute -top-20 -right-20 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl"></div>
             <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
           </div>
@@ -171,21 +173,26 @@ export default function FileUpload({
             <div className="bg-gradient-to-br from-cyan-500/20 to-blue-500/20 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-cyan-500/30">
               <Upload className="w-10 h-10 text-cyan-400" />
             </div>
+
             <h2 className="text-2xl font-bold text-white mb-3">
               Upload Your CSV File
             </h2>
+
             <p className="text-gray-400 mb-6">
               Drag and drop your file here, or click to browse
             </p>
+
             <div className="flex flex-wrap gap-3 justify-center text-sm">
               <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700">
                 <FileText className="w-4 h-4 text-cyan-400" />
                 <span className="text-gray-300">CSV Format</span>
               </div>
+
               <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700">
                 <AlertCircle className="w-4 h-4 text-cyan-400" />
                 <span className="text-gray-300">Max 5MB</span>
               </div>
+
               <div className="flex items-center gap-2 bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700">
                 <MapPin className="w-4 h-4 text-cyan-400" />
                 <span className="text-gray-300">Max 50 Locations</span>
@@ -198,9 +205,19 @@ export default function FileUpload({
             type="file"
             accept=".csv"
             onChange={handleFileInputChange}
+            disabled={loading}
             className="hidden"
           />
         </div>
+      </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="mt-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <p className="text-red-300">{error}</p>
+        </div>
+      )}
 
       {/* How It Works Section */}
       <div className="rounded-2xl p-8 border border-slate-700">
@@ -268,63 +285,6 @@ export default function FileUpload({
               <h3 className="text-white font-semibold mb-2">Visualize</h3>
               <p className="text-gray-400 text-sm">
                 Interactive globe with comprehensive analytics
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Future Features */}
-      <div className="rounded-2xl p-6 border border-slate-700 relative overflow-hidden">
-        <div className="absolute top-0 right-0 bg-gradient-to-br bg-cyan-500/20 px-4 py-1 rounded-bl-xl border-l border-b border-cyan-500/30">
-          <span className="text-cyan-400 text-xs font-semibold">
-            Coming Soon
-          </span>
-        </div>
-
-        <h3 className="text-xl font-bold text-white">Future Features</h3>
-        <div className="space-y-3">
-          <div className="flex items-start gap-3 opacity-75">
-            <div>
-              <p className="text-white font-medium">Manual Column Selection</p>
-              <p className="text-gray-400 text-sm">
-                Choose location and metric columns yourself
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 opacity-75">
-            <div>
-              <p className="text-white font-medium">
-                Custom Significant Column
-              </p>
-              <p className="text-gray-400 text-sm">
-                Pick any numeric column for visualization
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 opacity-75">
-            <div>
-              <p className="text-white font-medium">
-                Column Correlation Graphs
-              </p>
-              <p className="text-gray-400 text-sm">
-                Compare relationships between any two columns
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 opacity-75">
-            <div>
-              <p className="text-white font-medium">Advanced Visualizations</p>
-              <p className="text-gray-400 text-sm">
-                Heatmaps, time series, and trend analysis
-              </p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 opacity-75">
-            <div>
-              <p className="text-white font-medium">Export Reports</p>
-              <p className="text-gray-400 text-sm">
-                Download insights as PDF or PowerPoint
               </p>
             </div>
           </div>

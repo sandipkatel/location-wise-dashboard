@@ -15,8 +15,6 @@ export default function LocationDashboard() {
   const [analyticalData, setAnalyticalData] = useState<AnalyticalData | null>(
     null,
   );
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [fileName, setFileName] = useState("");
   const [significantCol, setSignificantCol] = useState("");
   const [activeTab, setActiveTab] = useState<"globe" | "table" | "stats">(
@@ -29,7 +27,6 @@ export default function LocationDashboard() {
     setAnalyticalData(null);
     setFileName("");
     setSignificantCol("");
-    setError("");
   };
 
   return (
@@ -59,7 +56,6 @@ export default function LocationDashboard() {
         {/* Upload Section */}
         {data.length === 0 ? (
           <FileUpload
-            setError={setError}
             setFileName={setFileName}
             setData={setData}
             setLocations={setLocations}
@@ -108,14 +104,6 @@ export default function LocationDashboard() {
               )}
             </div>
           </>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="mt-6 bg-red-500/10 border border-red-500/30 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-red-300">{error}</p>
-          </div>
         )}
 
       </div>
