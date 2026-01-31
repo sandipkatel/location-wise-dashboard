@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     siteName: "3D Earth CSV Visualizer",
     images: [
       {
-        url: "https://globe.skatel.com.np/3D_Globe.png",
+        url: "http://globe.skatel.com.np/3D_Globe.png",
         width: 1200,
         height: 630,
         alt: "3D Earth CSV Visualizer - Interactive Globe Dashboard",
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     title: "3D Earth CSV Visualizer | Interactive Globe Data Dashboard",
     description:
       "Transform CSV data into stunning 3D Earth visualizations with AI-powered analytics. Upload, visualize, analyze.",
-    images: ["https://globe.skatel.com.np/3D_Globe.png"], // Add your actual Twitter card image
+    images: ["http://globe.skatel.com.np/3D_Globe.png"], // Add your actual Twitter card image
     creator: "@sandipkatel", // Add your Twitter handle
   },
   viewport: {
