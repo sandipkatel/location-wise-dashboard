@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a **3D CSV Visualizer**. A simple project where you upload CSV files with some location data and it will automatically fetch location data and make a visual dashboard in a rotating 3D earth.
 
 ## Getting Started
 
